@@ -18,20 +18,19 @@ def main() -> None:
         raise RuntimeError("Grok API secret is not configured")
     client = OpenAI(api_key=key, base_url="https://api.groq.com/openai/v1")
     prompt = f"""Create exactly {COUNT} original DSA practice problems with correct solutions.
-Return ONLY a JSON array. Each item must have: title, difficulty, topic, problem,
+Return ONLY a JSON object with a `solutions` array. Each item must have: title, difficulty, topic, problem,
 approach, complexity, and solution (Python 3 code). Make every title unique and
 ensure code is syntactically valid. Do not use markdown fences."""
     response = client.chat.completions.create(
         model=MODEL,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.2,
+        response_format={"type": "json_object"},
     )
     raw = response.choices[0].message.content or ""
     raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw.strip())
-    start, end = raw.find("["), raw.rfind("]")
-    if start < 0 or end <= start:
-        raise ValueError("Model response did not contain a JSON array")
-    items = json.loads(raw[start : end + 1])
+    parsed = json.loads(raw)
+    items = parsed.get("solutions") if isinstance(parsed, dict) else parsed
     if not isinstance(items, list) or len(items) != COUNT:
         raise ValueError(f"Expected {COUNT} solutions, received {len(items) if isinstance(items, list) else 'invalid JSON'}")
     required = {"title", "difficulty", "topic", "problem", "approach", "complexity", "solution"}
