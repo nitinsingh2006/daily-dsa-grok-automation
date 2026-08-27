@@ -3,10 +3,10 @@
 **Difficulty:** Easy  
 **Topic:** Arrays
 
-Given an array of integers and a target, return indices of two numbers that add up to the target.
+Find two indices in an array that sum to a target.
 
 ## Approach
-Use a hash map to store numbers and their indices while iterating.
+Use a hash map to store seen numbers.
 
 ## Complexity
 O(n) time, O(n) space
