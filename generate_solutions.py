@@ -8,14 +8,14 @@ from openai import OpenAI
 
 
 COUNT = 30
-MODEL = os.getenv("XAI_MODEL", "grok-4-1-fast-reasoning")
+MODEL = os.getenv("XAI_MODEL", "grok-4.6")
 OUTPUT = Path("solutions") / str(date.today())
 
 
 def main() -> None:
     key = os.environ.get("XAI_API_KEY")
     if not key:
-        raise RuntimeError("XAI_API_KEY is not configured")
+        raise RuntimeError("Grok API secret is not configured")
     client = OpenAI(api_key=key, base_url="https://api.x.ai/v1")
     prompt = f"""Create exactly {COUNT} original DSA practice problems with correct solutions.
 Return ONLY a JSON array. Each item must have: title, difficulty, topic, problem,

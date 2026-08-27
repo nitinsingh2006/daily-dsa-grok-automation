@@ -20,7 +20,7 @@ jobs:
       - run: pip install -r requirements.txt
       - run: python generate_solutions.py
         env:
-          XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
+          XAI_API_KEY: ${{ secrets.DSA }}
       - name: Commit generated solutions
         run: |
           git config user.name "github-actions[bot]"
