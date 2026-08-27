@@ -7,7 +7,7 @@ from pathlib import Path
 from openai import OpenAI
 
 
-COUNT = 30
+COUNT = 20
 MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
 OUTPUT = Path("solutions") / str(date.today())
 
@@ -19,8 +19,9 @@ def main() -> None:
     client = OpenAI(api_key=key, base_url="https://api.groq.com/openai/v1")
     prompt = f"""Create exactly {COUNT} original DSA practice problems with correct solutions.
 Return ONLY a JSON object with a `solutions` array. Each item must have: title, difficulty, topic, problem,
-approach, complexity, and solution (Python 3 code). Make every title unique and
-ensure code is syntactically valid. Do not use markdown fences."""
+approach, complexity, and compact solution (Python 3 code). Make every title unique,
+keep each problem and explanation under 80 words, ensure code is syntactically valid,
+and do not use markdown fences."""
     response = client.chat.completions.create(
         model=MODEL,
         messages=[{"role": "user", "content": prompt}],
