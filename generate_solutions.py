@@ -9,7 +9,7 @@ from openai import OpenAI
 
 
 COUNT = 20
-BATCH_SIZE = 5
+BATCH_SIZE = 2
 MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
 OUTPUT = Path("solutions") / str(date.today())
 
@@ -21,6 +21,7 @@ def main() -> None:
     client = OpenAI(api_key=key, base_url="https://api.groq.com/openai/v1")
     all_items = []
     failed_log = Path("failed_items.log")
+    raw_failure_dir = Path("raw_failures")
 
     def request_batch(batch_count: int, batch_number: int) -> list:
         prompt = f"""Return valid JSON only. Create exactly {batch_count} original DSA practice problems.
@@ -28,16 +29,20 @@ The response must be JSON in this exact structure:
 {{"solutions": [{{"title": "Two Sum", "difficulty": "Easy", "topic": "Arrays",
 "problem": "Find two indices...", "approach": "Use a hash map.",
 "complexity": "O(n) time, O(n) space", "solution": "def solve(nums, target): pass"}}]}}
-The `solutions` array must contain exactly {batch_count} items. Every item must have
+The JSON array must contain EXACTLY {batch_count} objects. Count them before responding.
+Every item must have
 title, difficulty, topic, problem, approach, complexity, and compact Python 3 solution.
 Keep problem and explanation under 80 words, ensure code is syntactically valid, and
 do not use markdown fences or any text outside the JSON object."""
         last_error = None
         for attempt in range(1, 3):
+            current_prompt = prompt
+            if attempt == 2:
+                current_prompt += f"\nReturn EXACTLY {batch_count} solutions, no more no less, as a JSON array inside the solutions field."
             try:
                 response = client.chat.completions.create(
                     model=MODEL,
-                    messages=[{"role": "user", "content": prompt}],
+                    messages=[{"role": "user", "content": current_prompt}],
                     temperature=0.2,
                     max_tokens=4096,
                     response_format={"type": "json_object"},
@@ -48,11 +53,21 @@ do not use markdown fences or any text outside the JSON object."""
                 raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw).strip()
                 parsed = json.loads(raw)
                 items = parsed.get("solutions") if isinstance(parsed, dict) else parsed
-                if not isinstance(items, list) or len(items) != batch_count:
-                    raise ValueError(f"expected {batch_count} solutions")
-                return items
+                if not isinstance(items, list):
+                    raise ValueError("solutions field was not a list")
+                if len(items) >= batch_count:
+                    return items[:batch_count]
+                if attempt == 2:
+                    missing = batch_count - len(items)
+                    with failed_log.open("a", encoding="utf-8") as log:
+                        log.write(f"batch {batch_number}: {missing} item(s) missing after retry\n")
+                    return items
+                raise ValueError(f"expected {batch_count} solutions, received {len(items)}")
             except Exception as error:
                 last_error = error
+                if 'raw' in locals() and raw:
+                    raw_failure_dir.mkdir(parents=True, exist_ok=True)
+                    (raw_failure_dir / f"batch_{batch_number}.json").write_text(raw, encoding="utf-8")
                 if attempt < 2:
                     time.sleep(2)
         with failed_log.open("a", encoding="utf-8") as log:
