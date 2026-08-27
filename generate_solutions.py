@@ -28,7 +28,10 @@ ensure code is syntactically valid. Do not use markdown fences."""
     )
     raw = response.choices[0].message.content or ""
     raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw.strip())
-    items = json.loads(raw)
+    start, end = raw.find("["), raw.rfind("]")
+    if start < 0 or end <= start:
+        raise ValueError("Model response did not contain a JSON array")
+    items = json.loads(raw[start : end + 1])
     if not isinstance(items, list) or len(items) != COUNT:
         raise ValueError(f"Expected {COUNT} solutions, received {len(items) if isinstance(items, list) else 'invalid JSON'}")
     required = {"title", "difficulty", "topic", "problem", "approach", "complexity", "solution"}
