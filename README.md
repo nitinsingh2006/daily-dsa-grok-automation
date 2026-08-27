@@ -1,6 +1,6 @@
 # Daily DSA Grok Automation
 
-Generates 30 DSA solutions each day with the xAI API, validates the response shape, and commits the results from GitHub Actions. The workflow runs in the cloud, so the local PC can be shut down.
+Generates 30 DSA solutions each day with the Groq API, validates the response shape, and commits the results from GitHub Actions. The workflow runs in the cloud, so the local PC can be shut down.
 
 ## Required repository secrets
 
