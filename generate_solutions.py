@@ -19,6 +19,23 @@ def main() -> None:
     key = os.environ.get("XAI_API_KEY")
     if not key:
         raise RuntimeError("Grok API secret is not configured")
+
+    # Improvement 3: Verify git identity is configured before doing any work
+    git_name = subprocess.run(
+        ["git", "config", "user.name"],
+        capture_output=True, text=True,
+    ).stdout.strip()
+    git_email = subprocess.run(
+        ["git", "config", "user.email"],
+        capture_output=True, text=True,
+    ).stdout.strip()
+    if not git_name or not git_email:
+        raise RuntimeError(
+            "Git identity not configured — run:\n"
+            "  git config user.name \"Your Name\"\n"
+            "  git config user.email \"you@example.com\""
+        )
+
     client = OpenAI(api_key=key, base_url="https://api.groq.com/openai/v1")
     all_items = []
     failed_log = Path("failed_items.log")
@@ -111,11 +128,30 @@ do not use markdown fences or any text outside the JSON object."""
 
     # Push all commits together in a single push
     if committed_count > 0:
+        # Improvement 2: rebase on top of any remote changes before pushing
+        # to avoid non-fast-forward rejection errors
+        try:
+            subprocess.run(["git", "pull", "--rebase"], check=True)
+        except subprocess.CalledProcessError as rebase_error:
+            with failed_log.open("a", encoding="utf-8") as log:
+                log.write(f"git pull --rebase failed: {rebase_error}\n")
         try:
             subprocess.run(["git", "push"], check=True)
         except subprocess.CalledProcessError as push_error:
             with failed_log.open("a", encoding="utf-8") as log:
                 log.write(f"git push failed: {push_error}\n")
+
+    # Improvement 1: final summary — compare committed_count against target
+    if committed_count == COUNT:
+        print(f"✅ All {COUNT} solutions committed and pushed.")
+    else:
+        warning = (
+            f"⚠️  Only {committed_count}/{COUNT} solutions committed today"
+            " — check failed_items.log"
+        )
+        print(warning)
+        with failed_log.open("a", encoding="utf-8") as log:
+            log.write(f"SUMMARY: {warning}\n")
 
 
 if __name__ == "__main__":
