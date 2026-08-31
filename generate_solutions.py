@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import subprocess
 import time
 from datetime import date
 from pathlib import Path
@@ -80,16 +81,41 @@ do not use markdown fences or any text outside the JSON object."""
     items = all_items
     required = {"title", "difficulty", "topic", "problem", "approach", "complexity", "solution"}
     OUTPUT.mkdir(parents=True, exist_ok=True)
+    committed_count = 0
     for index, item in enumerate(items, 1):
         if not isinstance(item, dict) or not required.issubset(item) or not str(item["solution"]).strip():
             with failed_log.open("a", encoding="utf-8") as log:
                 log.write(f"item {index} skipped: missing required fields\n")
             continue
         safe = re.sub(r"[^a-z0-9]+", "-", item["title"].lower()).strip("-")[:60]
-        (OUTPUT / f"{index:02d}-{safe or 'problem'}.md").write_text(
+        filename = f"{index:02d}-{safe or 'problem'}.md"
+        filepath = OUTPUT / filename
+        filepath.write_text(
             f"# {item['title']}\n\n**Difficulty:** {item['difficulty']}  \n**Topic:** {item['topic']}\n\n{item['problem']}\n\n## Approach\n{item['approach']}\n\n## Complexity\n{item['complexity']}\n\n## Solution\n```python\n{item['solution']}\n```\n",
             encoding="utf-8",
         )
+        # Stage only this file and commit immediately
+        try:
+            subprocess.run(
+                ["git", "add", str(filepath)],
+                check=True,
+            )
+            subprocess.run(
+                ["git", "commit", "-m", f"solve: {filename}"],
+                check=True,
+            )
+            committed_count += 1
+        except subprocess.CalledProcessError as git_error:
+            with failed_log.open("a", encoding="utf-8") as log:
+                log.write(f"git commit failed for {filename}: {git_error}\n")
+
+    # Push all commits together in a single push
+    if committed_count > 0:
+        try:
+            subprocess.run(["git", "push"], check=True)
+        except subprocess.CalledProcessError as push_error:
+            with failed_log.open("a", encoding="utf-8") as log:
+                log.write(f"git push failed: {push_error}\n")
 
 
 if __name__ == "__main__":
