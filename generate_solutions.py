@@ -13,6 +13,7 @@ COUNT = 20
 BATCH_SIZE = 2
 MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
 OUTPUT = Path("solutions") / str(date.today())
+LOCK_FILE = Path("automation.lock")
 
 
 def main() -> None:
@@ -155,4 +156,11 @@ do not use markdown fences or any text outside the JSON object."""
 
 
 if __name__ == "__main__":
-    main()
+    if LOCK_FILE.exists():
+        print("⚠️ Another run already in progress (lock file exists) — exiting")
+    else:
+        LOCK_FILE.touch()
+        try:
+            main()
+        finally:
+            LOCK_FILE.unlink(missing_ok=True)
