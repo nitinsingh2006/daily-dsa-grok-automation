@@ -11,3 +11,7 @@ The workflow has a daily UTC schedule and can also be started manually. Generate
 ## How it works
 
 GitHub Actions generates, validates, commits, and pushes the daily DSA solutions automatically.
+
+## Output
+
+Each run stores the generated practice files in a date-based folder under `solutions/`.
