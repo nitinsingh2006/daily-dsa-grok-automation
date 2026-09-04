@@ -7,3 +7,7 @@ Generates 20 DSA solutions each day with the Groq API, validates the response sh
 - `XAI_API_KEY`
 
 The workflow has a daily UTC schedule and can also be started manually. Generated files are written under `solutions/YYYY-MM-DD/`.
+
+## How it works
+
+GitHub Actions generates, validates, commits, and pushes the daily DSA solutions automatically.
