@@ -18,13 +18,15 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt
+      - name: Configure Git identity
+        run: |
+          git config user.name "nitinsingh2006"
+          git config user.email "205589850+nitinsingh2006@users.noreply.github.com"
       - run: python generate_solutions.py
         env:
           XAI_API_KEY: ${{ secrets.DSA }}
       - name: Commit generated solutions
         run: |
-          git config user.name "nitinsingh2006"
-          git config user.email "205589850+nitinsingh2006@users.noreply.github.com"
           solution_files=$(git status --short -- solutions/ | awk '$1 ~ /A|M|\?\?/ {print substr($0, 4)}')
           commit_count=0
 
