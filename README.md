@@ -16,6 +16,14 @@ GitHub Actions generates, validates, commits, and pushes the daily DSA solutions
 
 Each run stores the generated practice files in a date-based folder under `solutions/`.
 
+## Local checks
+
+Before opening a pull request, verify that the generator still compiles without running it:
+
+```bash
+python -m py_compile generate_solutions.py
+```
+
 ## Contributing
 
 To contribute, create a focused branch, update the documentation or workflow as needed, and open a pull request with a clear description of the change. Please avoid committing API keys or generated secrets.
